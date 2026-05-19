@@ -1,8 +1,8 @@
 from datetime import datetime
 from sqlalchemy import func
-from sqlalchemy.orm import Mapped, mapped_column, validates
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import BaseModel
-import hashlib
+
 
 class Users(BaseModel):
 
@@ -15,13 +15,4 @@ class Users(BaseModel):
 
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    @validates('hashed_password')
-    def validate_password(self, key, password):
-        if not password:
-            raise ValueError('password cannot be empty')
-        hashed = hashlib.sha256(password.encode()).hexdigest()
-        return hashed
-    
-    def verify_password(self, password: str) -> bool:
-        return self.hashed_password == hashlib.sha256(password.encode()).hexdigest()
     

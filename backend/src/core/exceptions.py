@@ -1,4 +1,0 @@
-
-
-class UserAlreadyExistsError(Exception):
-    pass

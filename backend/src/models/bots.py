@@ -16,6 +16,12 @@ class Bots(BaseModel):
     _encrypted_token: Mapped[str] = mapped_column('token', nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    
+    def __init__(self, **kwargs):
+        token = kwargs.pop('token', None)
+        super().__init__(**kwargs)
+        if token is not None:
+            self.token = token
 
     @hybrid_property
     def token(self) -> str: # type: ignore

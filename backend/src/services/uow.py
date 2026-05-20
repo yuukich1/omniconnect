@@ -2,6 +2,8 @@ from src.core.config import async_session_maker
 from abc import ABC, abstractmethod
 from sqlalchemy.ext.asyncio import AsyncSession
 import src.repositories as repo
+
+
 class IUnitOfWork(ABC):
     
     bots: repo.BotsRepository
@@ -38,6 +40,8 @@ class UnitOfWork(IUnitOfWork):
         self.message = repo.MessageRepository(self.session)
         self.token = repo.RefreshTokenRepository(self.session)
         self.users = repo.UserRepository(self.session)
+        
+        return self
         
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         if exc_type:

@@ -32,14 +32,12 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
   const hintRef = useRef<HTMLParagraphElement>(null);
   const welcomeRef = useRef<HTMLDivElement>(null);
 
-  // Автофокус при переключении шагов
   useEffect(() => {
     if (step !== 'summary' && step !== 'welcome') {
       inputRef.current?.focus();
     }
   }, [step]);
 
-  // Анимация подсказок
   useEffect(() => {
     if (hintRef.current && step !== 'welcome') {
       gsap.fromTo(hintRef.current, 
@@ -49,7 +47,6 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
     }
   }, [step]);
 
-  // Управление правой стрелкой (Вперед)
   useEffect(() => {
     if (step === 'summary' || step === 'welcome') return;
     const value = step === 'name' ? username : step === 'email' ? email : password;
@@ -61,7 +58,6 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
     }
   }, [username, email, password, step]);
 
-  // Управление левой стрелкой (Назад)
   useEffect(() => {
     if (step !== 'name' && step !== 'summary' && step !== 'welcome') {
       gsap.to(prevBtnRef.current, { opacity: 1, x: 0, pointerEvents: 'auto', duration: 0.2 });
@@ -70,7 +66,6 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
     }
   }, [step]);
 
-  // Анимация итогового экрана
   useEffect(() => {
     if (step === 'summary' && summaryRef.current) {
       gsap.fromTo(summaryRef.current.querySelectorAll('.summary-item'),
@@ -94,7 +89,6 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
                 stagger: 0.15, 
                 ease: 'power4.out',
                 onComplete: () => {
-                // Держим надпись 2 секунды, затем фейдаут всей формы
                 gsap.to(containerRef.current, {
                     opacity: 0,
                     scale: 0.98,
@@ -102,7 +96,6 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
                     delay: 2,
                     ease: 'power3.inOut',
                     onComplete: () => {
-                    // И ВОТ ТУТ, когда всё скрылось, безопасно авторизуем пользователя глобально!
                     if (savedTokenRef.current) {
                         loginGlobal(
                         { id: 'current_user', username: username.trim() }, 

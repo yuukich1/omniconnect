@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Form, Query
+from typing import List, Optional
+
+from fastapi import APIRouter, File, Form, Query, UploadFile
 from src.api.dependecies import TelegramBotsServiceDep, UowDep, CurrentUserDep, MessageServiceDep
 
 router = APIRouter(prefix='/messages', tags=['Messages'])
@@ -10,6 +12,11 @@ async def get_messages(chat_id: int, m_service: MessageServiceDep, uow: UowDep, 
     return messages
 
 @router.post('/{chat_id}/send')
-async def send_message(chat_id: int, uow: UowDep, t_service: TelegramBotsServiceDep, user: CurrentUserDep, text: str = Form(...)):
-    await t_service.send_message(chat_id, text, user,  uow)
+async def send_message(chat_id: int, 
+                       uow: UowDep, 
+                       t_service: TelegramBotsServiceDep, 
+                       user: CurrentUserDep, 
+                       text: Optional[str] = Form(None), 
+                       attachments: Optional[UploadFile] = File(None)):
+    await t_service.send_message(chat_id, text, attachments, user, uow)
     return {"status": "ok"}

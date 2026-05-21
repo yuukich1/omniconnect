@@ -2,6 +2,7 @@ from fastapi.security import OAuth2PasswordBearer
 from pydantic_settings import BaseSettings
 from cryptography.fernet import Fernet
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from aiogram.client.session.aiohttp import AiohttpSession
 
 class Settings(BaseSettings):
     ENCRYPTION_KEY: str = 'KEY'
@@ -10,6 +11,7 @@ class Settings(BaseSettings):
     SECRET_REFRESH_KEY: str = 'secret_refresh_key'
     EXPIRE_IN: int = 3600
     EXPIRE_REFRESH_TOKEN_IN: int = 86400
+    UPLOAD_DIR: str = "uploads/telegram"
     
     model_config = {
         "env_file": ".env",
@@ -26,3 +28,5 @@ async_engine = create_async_engine(settings.DATABASE_URL)
 async_session_maker = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token", refreshUrl="api/v1/auth/refresh")
+
+session_tg_bot = AiohttpSession()

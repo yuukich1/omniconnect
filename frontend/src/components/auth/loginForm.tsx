@@ -1,6 +1,6 @@
-'use client';
+ 'use client';
 
-import React from 'react';
+
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLoginAnimations } from './hooks/useLoginAnimations';
 import { useLogin } from './hooks/useLogin';
@@ -11,9 +11,7 @@ interface LoginFormProps {
 
 export default function LoginForm({ onSwitchMode }: LoginFormProps) {
   const loginGlobal = useAuthStore((state) => state.login);
-  
   const { containerRef, elementsRef, shakeValidationError, shakeApiError, animateSuccess } = useLoginAnimations();
-
   const { username, setUsername, password, setPassword, error, isLoading, handleSubmit } = useLogin({
     onValidationError: shakeValidationError,
     onApiError: shakeApiError,
@@ -24,24 +22,8 @@ export default function LoginForm({ onSwitchMode }: LoginFormProps) {
     }
   });
 
-  const handleActionSubmit = () => {
-    if (isLoading) return;
-    const mockEvent = {
-      preventDefault: () => {},
-      stopPropagation: () => {}
-    };
-    
-    handleSubmit(mockEvent as any);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleActionSubmit();
-    }
-  };
-
   return (
-    <div 
+    <div
       ref={containerRef}
       className="absolute inset-0 flex items-center justify-center bg-white dark:bg-black px-6 z-50 overflow-hidden min-h-full"
     >
@@ -52,19 +34,19 @@ export default function LoginForm({ onSwitchMode }: LoginFormProps) {
           <h2 className="text-3xl font-light tracking-tight text-neutral-900 dark:text-neutral-100">
             Вход в аккаунт
           </h2>
+
           <p className="text-xs tracking-wide uppercase text-neutral-400 dark:text-neutral-500 font-medium">
             Omniconnect
           </p>
         </div>
 
-        <div className="space-y-5 relative z-20">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="animate-item relative">
             <input
               type="text"
               placeholder="Логин"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              onKeyDown={handleKeyDown}
               className="w-full h-12 bg-transparent border-b border-neutral-200 dark:border-neutral-800 text-neutral-950 dark:text-neutral-50 placeholder-neutral-400 dark:placeholder-neutral-600 outline-none text-base transition-colors focus:border-neutral-900 dark:focus:border-neutral-100 py-2 px-1"
             />
           </div>
@@ -75,7 +57,6 @@ export default function LoginForm({ onSwitchMode }: LoginFormProps) {
               placeholder="Пароль"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={handleKeyDown}
               className="w-full h-12 bg-transparent border-b border-neutral-200 dark:border-neutral-800 text-neutral-950 dark:text-neutral-50 placeholder-neutral-400 dark:placeholder-neutral-600 outline-none text-base transition-colors focus:border-neutral-900 dark:focus:border-neutral-100 py-2 px-1"
             />
           </div>
@@ -86,12 +67,12 @@ export default function LoginForm({ onSwitchMode }: LoginFormProps) {
             </p>
           )}
 
-          <div className="animate-item pt-4 relative z-30">
+          <div className="animate-item pt-4">
             <button
-              type="button" // Явно указываем button, а не submit
-              onClick={handleActionSubmit}
+              type="submit"
               disabled={isLoading}
-              className="w-full h-12 rounded-full bg-neutral-950 dark:bg-white text-white dark:text-black font-medium text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 flex items-center justify-center tracking-wide cursor-pointer"
+              className="w-full h-12 rounded-full bg-neutral-950 dark:bg-white text-white dark:text-black font-medium text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40 flex items-center justify-center tracking-wide"
+
             >
               {isLoading ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -101,20 +82,17 @@ export default function LoginForm({ onSwitchMode }: LoginFormProps) {
             </button>
           </div>
 
-          <div className="mt-8 text-center animate-item relative z-30">
+          <div className="mt-8 text-center animate-item">
             <button
               type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                onSwitchMode();
-              }}
-              className="text-xs tracking-wide text-neutral-500 hover:text-neutral-300 transition-colors underline underline-offset-4 decoration-neutral-800 cursor-pointer p-2"
+              onClick={onSwitchMode}
+              className="text-xs tracking-wide text-neutral-500 hover:text-neutral-300 transition-colors underline underline-offset-4 decoration-neutral-800"
             >
               У меня ещё нет аккаунта. <span className="underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700">Создать</span>
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
-}
+} 

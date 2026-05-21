@@ -1,6 +1,7 @@
 
-import os
+import mimetypes
 from typing import Optional
+from fastapi import UploadFile
 import httpx
 import aiogram as tg
 from src.schemas.users import CurrentUser
@@ -9,10 +10,12 @@ from src.core.exceptions.chats import ChatNotFoundError
 from src.services import IUnitOfWork
 from .base import IPlatformBotsService
 from src.schemas.bots import TelegramMessageDTO
+import src.utils as util
+from src.core.config import session_tg_bot
 
 class TelegramBotsService(IPlatformBotsService):
     
-    upload_dir = "uploads/telegram"
+
     
     async def _extract_message_data(self, payload: dict) -> TelegramMessageDTO:
         
@@ -44,14 +47,7 @@ class TelegramBotsService(IPlatformBotsService):
         response = await client.get(download_url)
         return response.content if response.status_code == 200 else None
 
-    def _save_file_to_disk(self, content: bytes, file_id: str, bot_id: int, tg_file_path: str) -> str:
-        _, ext = os.path.splitext(tg_file_path)
-        local_filename = f"bot_{bot_id}_{file_id[-12:]}{ext}"
-        local_path = os.path.join(self.upload_dir, local_filename)
-        os.makedirs(self.upload_dir, exist_ok=True)
-        with open(local_path, "wb") as f:
-            f.write(content)
-        return local_path
+   
 
     async def _download_telegram_file(self, file_id: str, bot_id: int, token: str) -> Optional[str]:
         try:
@@ -64,8 +60,8 @@ class TelegramBotsService(IPlatformBotsService):
                 if not file_content:
                     return None
 
-                return self._save_file_to_disk(file_content, file_id, bot_id, tg_file_path)
-        except Exception as e:
+                return await util.save_file_to_disk(file_content, tg_file_path, bot_id)
+        except Exception:
             return None
         
     async def save_message(self, payload: dict, bot_id: int, uow: IUnitOfWork):
@@ -100,7 +96,8 @@ class TelegramBotsService(IPlatformBotsService):
             await uow.commit()
             return message_dict
         
-    async def send_message(self, chat_id: int, text: str, user: CurrentUser, uow: IUnitOfWork):
+    async def send_message(self, chat_id: int, text: Optional[str], attachments: Optional[UploadFile], user: CurrentUser, uow: IUnitOfWork):
+        local_file_path = None
         async with uow:
             bots_from_db = await uow.bots.get_chat_id(chat_id)
             if bots_from_db is None:
@@ -110,12 +107,45 @@ class TelegramBotsService(IPlatformBotsService):
             chat = await uow.chats.get(chat_id)
             if chat is None:
                 raise ChatNotFoundError(chat_id)
-            bot = tg.Bot(token=bots_from_db.token)
-            if await bot.send_message(chat_id=chat.chat_id, text=text):
-                message_dict = {
-                    "chat_id": chat_id,
-                    "text": text,
-                    "username": user.username
-                }
-                await uow.message.save(message_dict)
+            bot = tg.Bot(token=bots_from_db.token, session=session_tg_bot)
+            if attachments:
+                local_file_path = await self._send_attachments(bot, chat.chat_id, attachments, text, bots_from_db.id)
+            elif text:
+                await bot.send_message(chat.chat_id, text)
+            else:
+                raise ValueError("Сообщение не может быть пустым")
+
+            message_dict = {
+                "chat_id": chat.id, 
+                "text": text,
+                "username": user.username,
+                "attachments_url": local_file_path 
+            }
+            await uow.message.save(message_dict)
+                
+    async def _send_attachments(self, bot: tg.Bot, chat_id: int, attachments: UploadFile, text: Optional[str], owner_id: int):
+        file_content = await attachments.read()
+        filename = attachments.filename or "unknown_file"
+        filepath = await util.save_file_to_disk(file_content, original_filename=filename, owner_id=owner_id)
+        
+        mime_type, _ = mimetypes.guess_type(filename)
+        
+        try:
+            if mime_type and mime_type.startswith('image/'):
+                await bot.send_photo(chat_id=chat_id, photo=tg.types.FSInputFile(filepath), caption=text)
+                
+            elif mime_type and mime_type.startswith('video/'):
+                await bot.send_video(chat_id=chat_id, video=tg.types.FSInputFile(filepath), caption=text)
+                
+            elif mime_type and mime_type.startswith('audio/'):
+                await bot.send_audio(chat_id=chat_id, audio=tg.types.FSInputFile(filepath), caption=text)
+                
+            else:
+                await bot.send_document(chat_id=chat_id, document=tg.types.FSInputFile(filepath), caption=text)
+                
+        except Exception as e:
+            print(f"Ошибка при отправке файла: {e}")
+            raise
+        return filepath
+                    
             

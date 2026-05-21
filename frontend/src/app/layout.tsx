@@ -1,11 +1,6 @@
-'use client';
-
-
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/navbar";
 import AppInitializer from "@/components/auth/AppInit";
-import { useAuthStore } from "@/store/useAuthStore";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,28 +12,26 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const metadata = {
+  title: 'OmniConnect',
+  description: 'Aggregator space',
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isHydrated = useAuthStore((state) => state.isHydrated);
-
   return (
     <html
-      lang="en"
+      lang="ru"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50">
+      <body suppressHydrationWarning={true} className="min-h-full flex flex-col bg-neutral-50 dark:bg-neutral-950 text-white dark:text-neutral-50">
         <AppInitializer>
-          {isHydrated && isAuthenticated && <Navbar />}
-          
-          <main className="min-h-screen pb-20 pt-4 md:pt-24">
-            {children}
-          </main>
+          {children}
         </AppInitializer>
+        
       </body>
     </html>
   );

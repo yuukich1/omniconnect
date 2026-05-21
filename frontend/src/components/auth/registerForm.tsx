@@ -1,202 +1,53 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { registerSchema } from '@/schemas/auth.schema';
 import { useAuthStore } from '@/store/useAuthStore';
-import { api } from '@/lib/api';
-import axios from 'axios';
-import gsap from 'gsap';
+import { useRegister } from './hooks/useRegister';
+import { useRegisterAnimations } from './hooks/useRegisterAnimations';
 
 interface RegisterFormProps {
   onSuccess: () => void;
   onSwitchMode: () => void;
 }
 
-type Step = 'name' | 'email' | 'password' | 'summary' | 'welcome';
-
 export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormProps) {
   const loginGlobal = useAuthStore((state) => state.login);
-  
-  const [step, setStep] = useState<Step>('name');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const nextBtnRef = useRef<HTMLButtonElement>(null);
-  const prevBtnRef = useRef<HTMLButtonElement>(null);
-  const summaryRef = useRef<HTMLDivElement>(null);
-  const hintRef = useRef<HTMLParagraphElement>(null);
-  const welcomeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (step !== 'summary' && step !== 'welcome') {
-      inputRef.current?.focus();
+  const {
+    step, setStep,
+    username, setUsername,
+    email, setEmail,
+    password, setPassword,
+    error, setError,
+    isLoading,
+    goNext,
+    handleSubmit,
+    completeWelcome
+  } = useRegister(
+    () => shake(), 
+    (validUsername, token) => {
+      loginGlobal({ id: 'current_user', username: validUsername }, token);
+      onSuccess();
     }
-  }, [step]);
+  );
 
-  useEffect(() => {
-    if (hintRef.current && step !== 'welcome') {
-      gsap.fromTo(hintRef.current, 
-        { opacity: 0, y: -5 },
-        { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }
-      );
-    }
-  }, [step]);
+  const currentInputValue = step === 'name' ? username : step === 'email' ? email : password;
+  const { 
+    containerRef, inputRef, nextBtnRef, prevBtnRef, 
+    summaryRef, hintRef, welcomeRef, 
+    shake, transitionInput 
+  } = useRegisterAnimations(step, currentInputValue, completeWelcome);
 
-  useEffect(() => {
-    if (step === 'summary' || step === 'welcome') return;
-    const value = step === 'name' ? username : step === 'email' ? email : password;
-    
-    if (value.trim().length > 0) {
-      gsap.to(nextBtnRef.current, { opacity: 1, x: 0, pointerEvents: 'auto', duration: 0.2, ease: 'power2.out' });
-    } else {
-      gsap.to(nextBtnRef.current, { opacity: 0, x: -8, pointerEvents: 'none', duration: 0.15 });
-    }
-  }, [username, email, password, step]);
-
-  useEffect(() => {
-    if (step !== 'name' && step !== 'summary' && step !== 'welcome') {
-      gsap.to(prevBtnRef.current, { opacity: 1, x: 0, pointerEvents: 'auto', duration: 0.2 });
-    } else {
-      gsap.to(prevBtnRef.current, { opacity: 0, x: 8, pointerEvents: 'none', duration: 0.15 });
-    }
-  }, [step]);
-
-  useEffect(() => {
-    if (step === 'summary' && summaryRef.current) {
-      gsap.fromTo(summaryRef.current.querySelectorAll('.summary-item'),
-        { opacity: 0, y: 15, scale: 0.98 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.06, ease: 'power4.out' }
-      );
-    }
-  }, [step]);
-
-  const savedTokenRef = useRef<string | null>(null);
-
-    useEffect(() => {
-        if (step === 'welcome' && welcomeRef.current) {
-            gsap.fromTo(welcomeRef.current.querySelectorAll('.welcome-item'),
-            { opacity: 0, y: 25, scale: 0.96 },
-            { 
-                opacity: 1, 
-                y: 0, 
-                scale: 1, 
-                duration: 0.6, 
-                stagger: 0.15, 
-                ease: 'power4.out',
-                onComplete: () => {
-                gsap.to(containerRef.current, {
-                    opacity: 0,
-                    scale: 0.98,
-                    duration: 0.4,
-                    delay: 2,
-                    ease: 'power3.inOut',
-                    onComplete: () => {
-                    if (savedTokenRef.current) {
-                        loginGlobal(
-                        { id: 'current_user', username: username.trim() }, 
-                        savedTokenRef.current
-                        );
-                    }
-                    onSuccess(); 
-                    }
-                });
-                }
-            }
-            );
-        }
-    }, [step, onSuccess, username, loginGlobal]);
-
-  const changeStep = (nextStep: Step) => {
-    setError(null);
-    if (inputRef.current && nextStep !== 'summary' && nextStep !== 'welcome') {
-      gsap.to(inputRef.current, {
-        opacity: 0,
-        x: nextStep === 'password' || (step === 'name' && nextStep === 'email') ? -10 : 10,
-        duration: 0.15,
-        onComplete: () => {
-          setStep(nextStep);
-          gsap.fromTo(inputRef.current, 
-            { opacity: 0, x: nextStep === 'password' || (step === 'name' && nextStep === 'email') ? 10 : -10 }, 
-            { opacity: 1, x: 0, duration: 0.2 }
-          );
-        }
-      });
-    } else {
-      setStep(nextStep);
+  const handleNextClick = () => {
+    const nextStep = goNext();
+    if (nextStep) {
+      transitionInput(nextStep, () => setStep(nextStep));
     }
   };
 
-  const goNext = () => {
+  const handleChangeStep = (targetStep: typeof step) => {
     setError(null);
-    if (step === 'name') {
-      if (username.trim().length < 3) return setError('Минимум 3 символа'), shake();
-      if (username.length > 20) return setError('Максимум 20 символов'), shake();
-      changeStep('email');
-    } else if (step === 'email') {
-      if (!email.includes('@') || email.trim().length < 5) return setError('Некорректный формат email'), shake();
-      changeStep('password');
-    } else if (step === 'password') {
-      if (password.length < 8) return setError('Пароль должен быть от 8 символов'), shake();
-      if (password.length > 64) return setError('Пароль слишком длинный (макс. 64)'), shake();
-      if (!/\d/.test(password)) return setError('Пароль должен содержать цифру'), shake();
-      if (!/[A-ZА-Я]/.test(password)) return setError('Пароль должен содержать заглавную букву'), shake();
-      changeStep('summary');
-    }
+    transitionInput(targetStep, () => setStep(targetStep));
   };
-
-  const shake = () => {
-    gsap.to(containerRef.current, {
-      x: 6, duration: 0.05, yoyo: true, repeat: 4,
-      onComplete: () => gsap.set(containerRef.current, { x: 0 })
-    });
-  };
-
-
-    const handleSubmit = async () => {
-    setError(null);
-    setIsLoading(true);
-    try {
-        const regResponse = await api.post('/auth/register', {
-        email: email.trim(),
-        username: username.trim(),
-        password: password,
-        });
-
-        if (regResponse.status === 200 || regResponse.status === 201) {
-        const formData = new URLSearchParams();
-        formData.append('username', email.trim()); 
-        formData.append('password', password);
-
-        const tokenResponse = await api.post('/auth/token', formData, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        });
-
-        const token = tokenResponse.data.access_token;
-
-        if (token) {
-
-            savedTokenRef.current = token;
-            
-            setStep('welcome');
-        } else {
-            setError('Аккаунт создан, но не удалось авторизоваться автоматически');
-        }
-        }
-    } catch (err) {
-        if (axios.isAxiosError(err) && err.response) {
-        setError(err.response.data?.detail || 'Ошибка при регистрации или авто-входе');
-        } else {
-        setError('Сервер недоступен');
-        }
-    } finally {
-        setIsLoading(false);
-    }
-    };
 
   return (
     <div ref={containerRef} className="fixed inset-0 flex flex-col items-center justify-center bg-white dark:bg-black px-6 z-50 select-none overflow-hidden">
@@ -217,9 +68,8 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
           <button
             ref={prevBtnRef}
             type="button"
-            style={{ opacity: 0, transform: 'translateX(8px)' }}
-            onClick={() => changeStep(step === 'password' ? 'email' : 'name')}
-            className="absolute left-0 sm:-left-16 h-12 w-12 flex items-center justify-center rounded-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 active:scale-95 transition-all"
+            onClick={() => handleChangeStep(step === 'password' ? 'email' : 'name')}
+            className="absolute left-0 sm:-left-16 h-12 w-12 flex items-center justify-center rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 active:scale-95 transition-all"
           >
             <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 12L6 8l4-4"/></svg>
           </button>
@@ -233,7 +83,7 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
                 maxLength={25} 
                 placeholder="Как к вам обращаться?"
                 onChange={(e) => setUsername(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && username.trim() && goNext()}
+                onKeyDown={(e) => e.key === 'Enter' && username.trim() && handleNextClick()}
                 className="w-full h-12 bg-transparent border-b border-neutral-200 dark:border-neutral-800 text-neutral-950 dark:text-neutral-50 placeholder-neutral-400 dark:placeholder-neutral-600 outline-none text-base transition-colors focus:border-neutral-900 dark:focus:border-neutral-100 py-2 px-1 font-light"
               />
             )}
@@ -245,7 +95,7 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
                 value={email}
                 placeholder="Укажите ваш Email"
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && email.trim() && goNext()}
+                onKeyDown={(e) => e.key === 'Enter' && email.trim() && handleNextClick()}
                 className="w-full h-12 bg-transparent border-b border-neutral-200 dark:border-neutral-800 text-neutral-950 dark:text-neutral-50 placeholder-neutral-400 dark:placeholder-neutral-600 outline-none text-base transition-colors focus:border-neutral-900 dark:focus:border-neutral-100 py-2 px-1 font-light"
               />
             )}
@@ -257,7 +107,7 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
                 value={password}
                 placeholder="Придумайте пароль"
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && password.trim() && goNext()}
+                onKeyDown={(e) => e.key === 'Enter' && password.trim() && handleNextClick()}
                 className="w-full h-12 bg-transparent border-b border-neutral-200 dark:border-neutral-800 text-neutral-950 dark:text-neutral-50 placeholder-neutral-400 dark:placeholder-neutral-600 outline-none text-base transition-colors focus:border-neutral-900 dark:focus:border-neutral-100 py-2 px-1 font-light"
               />
             )}
@@ -266,9 +116,8 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
           <button
             ref={nextBtnRef}
             type="button"
-            style={{ opacity: 0, transform: 'translateX(-8px)' }}
-            onClick={goNext}
-            className="absolute right-0 sm:-right-16 h-12 w-12 flex items-center justify-center rounded-full bg-neutral-950 dark:bg-white text-white dark:text-black font-semibold active:scale-95 transition-all"
+            onClick={handleNextClick}
+            className="absolute right-0 sm:-right-16 h-12 w-12 flex items-center justify-center rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-black font-semibold active:scale-95 transition-all"
           >
             <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 4l4 4-4 4"/></svg>
           </button>
@@ -283,17 +132,17 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
           </div>
 
           <div className="border-t border-b border-neutral-100 dark:border-neutral-900 py-2 space-y-1">
-            <div onClick={() => changeStep('name')} className="summary-item opacity-0 flex items-center justify-between px-2 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-900/50 cursor-pointer transition-colors group">
+            <div onClick={() => handleChangeStep('name')} className="summary-item opacity-0 flex items-center justify-between px-2 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-900/50 cursor-pointer transition-colors group">
               <span className="text-sm text-neutral-400 dark:text-neutral-500 font-light">Никнейм</span>
               <span className="text-base text-neutral-900 dark:text-neutral-100 font-light group-hover:underline underline-offset-4 decoration-neutral-400">{username}</span>
             </div>
 
-            <div onClick={() => changeStep('email')} className="summary-item opacity-0 flex items-center justify-between px-2 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-900/50 cursor-pointer transition-colors group">
+            <div onClick={() => handleChangeStep('email')} className="summary-item opacity-0 flex items-center justify-between px-2 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-900/50 cursor-pointer transition-colors group">
               <span className="text-sm text-neutral-400 dark:text-neutral-500 font-light">Email</span>
               <span className="text-base text-neutral-900 dark:text-neutral-100 font-light max-w-[180px] sm:max-w-[200px] truncate group-hover:underline underline-offset-4 decoration-neutral-400">{email}</span>
             </div>
 
-            <div onClick={() => changeStep('password')} className="summary-item opacity-0 flex items-center justify-between px-2 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-900/50 cursor-pointer transition-colors group">
+            <div onClick={() => handleChangeStep('password')} className="summary-item opacity-0 flex items-center justify-between px-2 py-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-900/50 cursor-pointer transition-colors group">
               <span className="text-sm text-neutral-400 dark:text-neutral-500 font-light">Пароль</span>
               <span className="text-base text-neutral-400 dark:text-neutral-600 tracking-widest text-xs">••••••••</span>
             </div>
@@ -338,7 +187,6 @@ export default function RegisterForm({ onSuccess, onSwitchMode }: RegisterFormPr
           </button>
         </div>
       )}
-
     </div>
   );
 }

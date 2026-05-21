@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import LoginForm from './loginForm';
 import RegisterForm from './registerForm';
 
+
 export default function AuthScreen() {
   const [isLoginMode, setIsLoginMode] = useState(true);
 

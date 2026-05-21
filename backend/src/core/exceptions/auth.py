@@ -17,3 +17,8 @@ class TokenPayloadError(Exception):
     def __init__(self, message: str = "В токене отсутствует идентификатор пользователя"):
         self.message = message
         super().__init__(self.message)
+        
+class CredentialTokenError(Exception):
+    def __init__(self, message: str = 'Неверный токен'):
+        self.message = message
+        super().__init__(self.message)

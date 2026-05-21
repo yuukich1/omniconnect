@@ -13,6 +13,7 @@ class Message(BaseModel):
     chat_id: Mapped[int] = mapped_column(ForeignKey('chats.id'), nullable=False)
     text: Mapped[Optional[str]] = mapped_column(default=None)
     attachments_url: Mapped[Optional[str]] = mapped_column(default=None) 
+    username: Mapped[str] = mapped_column(server_default='unknown')
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-
+    
 

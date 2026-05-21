@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Path, Request
 from src.api.dependecies import TelegramBotsServiceDep, UowDep
-from loguru import logger
+from src.core.exceptions.bots import WebhookCreateMessageError
 
 
 router = APIRouter(prefix="/webhooks", tags=["Telegram Live Receive"])
@@ -10,9 +10,12 @@ async def receive_telegram_message(
     request: Request, 
     tg_bot_service: TelegramBotsServiceDep,
     uow: UowDep,
-    bot_id: int = Path(..., description="ID бота, которому предназначено сообщение"),
+    bot_id: int = Path(...),
 ):
-    pyload = await request.json()
-    await tg_bot_service.save_message(pyload, bot_id, uow)
-    return {"status": "success", "message": "delivered"}
+    try:
+        pyload = await request.json()
+        await tg_bot_service.save_message(pyload, bot_id, uow)
+        return {"status": "success", "message": "delivered"}
+    except Exception:
+        raise WebhookCreateMessageError()
     

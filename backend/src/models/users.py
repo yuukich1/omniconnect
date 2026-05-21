@@ -12,6 +12,7 @@ class Users(BaseModel):
     email: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
     username: Mapped[str] = mapped_column(nullable=True, default=lambda context: context.current_parameters.get('email'), )
     hashed_password: Mapped[str] = mapped_column(nullable=False)
+    role: Mapped[str] = mapped_column(server_default='user')
 
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 

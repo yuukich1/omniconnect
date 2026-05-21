@@ -1,3 +1,4 @@
+from src.schemas.users import CurrentUser
 from src.core.exceptions.bots import BotNotFoundError
 from .uow import IUnitOfWork
 from src.schemas.bots import BotCreateRequest
@@ -24,8 +25,20 @@ class BotsService:
                 raise BotNotFoundError(bot_id)
             return bot
         
-
-    
-    
-
-
+    async def update_bot(self, bot_id: int, token: str, user_id: int, uow: IUnitOfWork):
+        async with uow:
+            bot = await uow.bots.get(bot_id)
+            if bot is None or bot.user_id != user_id:
+                raise BotNotFoundError(bot_id)
+            await uow.bots.update(bot_id, {"token": token})
+            await uow.commit()
+            return bot
+        
+    async def delete_bot(self, bot_id: int, user: CurrentUser, uow: IUnitOfWork):
+        async with uow:
+            bot = await uow.bots.get(bot_id)
+            if not bot or bot.user_id != user.id or user.role != 'admin':
+                raise BotNotFoundError(bot_id)
+            await uow.bots.delete(bot_id)
+            await uow.commit()
+            return bot

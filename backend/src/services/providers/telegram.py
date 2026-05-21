@@ -3,7 +3,9 @@ import os
 from typing import Optional
 import httpx
 import aiogram as tg
-from src.core.exceptions.bots import BotNotFoundError, ChatNotFoundError, BotPermissionError
+from src.schemas.users import CurrentUser
+from src.core.exceptions.bots import BotNotFoundError, BotPermissionError
+from src.core.exceptions.chats import ChatNotFoundError
 from src.services import IUnitOfWork
 from .base import IPlatformBotsService
 from src.schemas.bots import TelegramMessageDTO
@@ -91,21 +93,29 @@ class TelegramBotsService(IPlatformBotsService):
             message_dict = {
                 "chat_id": chat.id, 
                 "text": message_data.text,
+                'username': message_data.username,
                 "attachments_url": local_file_path 
             }
             await uow.message.save(message_dict)
             await uow.commit()
             return message_dict
         
-    async def send_message(self, chat_id: int, text: str, user_id: int, uow: IUnitOfWork):
+    async def send_message(self, chat_id: int, text: str, user: CurrentUser, uow: IUnitOfWork):
         async with uow:
             bots_from_db = await uow.bots.get_chat_id(chat_id)
             if bots_from_db is None:
                 raise ChatNotFoundError(chat_id)
-            if bots_from_db.user_id != user_id:
+            if bots_from_db.user_id != user.id:
                 raise BotPermissionError
             chat = await uow.chats.get(chat_id)
             if chat is None:
                 raise ChatNotFoundError(chat_id)
             bot = tg.Bot(token=bots_from_db.token)
-            await bot.send_message(chat_id=chat.chat_id, text=text)
+            if await bot.send_message(chat_id=chat.chat_id, text=text):
+                message_dict = {
+                    "chat_id": chat_id,
+                    "text": text,
+                    "username": user.username
+                }
+                await uow.message.save(message_dict)
+            

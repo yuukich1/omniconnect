@@ -1,8 +1,8 @@
 """init_db
 
-Revision ID: 1ad9f240bf9a
+Revision ID: 477bc230631a
 Revises: 
-Create Date: 2026-05-20 04:00:24.474165
+Create Date: 2026-05-20 23:17:08.173737
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1ad9f240bf9a'
+revision: str = '477bc230631a'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -55,7 +55,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('bot_id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(), nullable=False),
-    sa.Column('chat_id', sa.Integer(), nullable=False),
+    sa.Column('chat_id', sa.BigInteger(), nullable=False),
     sa.ForeignKeyConstraint(['bot_id'], ['bots.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -67,6 +67,7 @@ def upgrade() -> None:
     sa.Column('chat_id', sa.Integer(), nullable=False),
     sa.Column('text', sa.String(), nullable=True),
     sa.Column('attachments_url', sa.String(), nullable=True),
+    sa.Column('username', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ),
     sa.PrimaryKeyConstraint('id')

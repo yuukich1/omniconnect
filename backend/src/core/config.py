@@ -25,4 +25,4 @@ async_engine = create_async_engine(settings.DATABASE_URL)
 
 async_session_maker = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token", refreshUrl="api/v1/auth/refresh")

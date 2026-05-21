@@ -14,9 +14,11 @@ class SecurityService:
     def _generate_token(self, payload: dict, secret_key: str) -> str:
         return jwt.encode(payload, secret_key, algorithm="HS256")
 
-    def create_access_token(self, user_id: int) -> str:
+    def create_access_token(self, user_id: int, username: str, role: str) -> str:
         payload = {
             "user_id": user_id,
+            "username": username,
+            "role": role,
             "exp": datetime.utcnow() + timedelta(seconds=settings.EXPIRE_IN)
         }
         return self._generate_token(payload, settings.SECRET_KEY)
@@ -38,4 +40,3 @@ class SecurityService:
         except jwt.InvalidTokenError:
             raise Exception("Invalid token")
         
-    

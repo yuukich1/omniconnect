@@ -1,9 +1,10 @@
 from fastapi import FastAPI
+from scalar_fastapi import get_scalar_api_reference
 from src.api.routers import all_routers
 from src.api.exception_handlers import register_exception_handlers
 from starlette.middleware.cors import CORSMiddleware
 
-app = FastAPI(description='OmniConnect API')
+app = FastAPI(description='OmniConnect API', docs_url=None, redoc_url=None)
 
 origins = [
     "http://localhost:3000",
@@ -18,6 +19,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],              
 )
+
+@app.get("/docs", include_in_schema=False)
+async def scalar_html():
+    return get_scalar_api_reference(
+        openapi_url=app.openapi_url,
+        title="OmniConnect API",
+    )
 
 for router in all_routers:
     app.include_router(prefix='/api/v1', router=router)

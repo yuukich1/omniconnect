@@ -15,4 +15,13 @@ class UserRegister(BaseModel):
     username: str = Field(max_length=20)
     password: Annotated[str, Field(min_length=8, max_length=64), AfterValidator(check_password_strength)]
     
+
+class CurrentUser(BaseModel):
+    id: int
+    username: str
+    role: str
     
+
+class RefreshTokenBody(BaseModel):
+    grant_type: str = Field(default="refresh_token")
+    refresh_token: str = Field(...)

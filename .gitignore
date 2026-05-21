@@ -13,6 +13,8 @@ venv.bak/
 build/
 dist/
 omniconnect.db
+
+uploads/
 *.pem
 
 # --- Node.js & Frontend ---
@@ -42,3 +44,5 @@ yarn-error.log*
 
 # --- Misc ---
 coverage/
+
+

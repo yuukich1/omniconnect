@@ -9,10 +9,11 @@ class BotNotFoundError(Exception):
             message = f"Bot with id {bot_id} not found"
         self.message = message
         super().__init__(self.message)
-        
-class ChatNotFoundError(Exception):
-    def __init__(self, chat_id: int, message: str = 'unknown'):
+
+
+class WebhookCreateMessageError(Exception):
+    def __init__(self, message: str | None = None):
         if message is None:
-            message = f"Chat with id {chat_id} not found"
+            message = f"Ошибка создания сообщения"
         self.message = message
         super().__init__(self.message)

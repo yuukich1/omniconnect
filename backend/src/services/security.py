@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import hashlib
 import jwt
+from src.core.exceptions.auth import TokenExpiredError, TokenInvalidError
 from src.core.config import settings
 
 class SecurityService:
@@ -36,7 +37,7 @@ class SecurityService:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             return payload
         except jwt.ExpiredSignatureError:
-            raise Exception("Token has expired")
+            raise TokenExpiredError("Token has expired")
         except jwt.InvalidTokenError:
-            raise Exception("Invalid token")
+            raise TokenInvalidError("Invalid token")
         

@@ -22,3 +22,13 @@ class CredentialTokenError(Exception):
     def __init__(self, message: str = 'Неверный токен'):
         self.message = message
         super().__init__(self.message)
+        
+class TokenExpiredError(Exception):
+    def __init__(self, message: str = 'Токен истек'):
+        self.message = message
+        super().__init__(self.message)
+        
+class TokenInvalidError(Exception):
+    def __init__(self, message: str = 'Токен не валидный'):
+        self.message = message
+        super().__init__(self.message)

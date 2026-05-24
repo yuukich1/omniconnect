@@ -11,6 +11,8 @@ class IUnitOfWork(ABC):
     message: repo.MessageRepository
     token: repo.RefreshTokenRepository
     users: repo.UserRepository
+    attachments: repo.AttachmentsRepository
+    message_attachemnts: repo.MessageAttachmetsRepository
     
     @abstractmethod
     async def __aenter__(self): ...
@@ -40,6 +42,8 @@ class UnitOfWork(IUnitOfWork):
         self.message = repo.MessageRepository(self.session)
         self.token = repo.RefreshTokenRepository(self.session)
         self.users = repo.UserRepository(self.session)
+        self.attachments = repo.AttachmentsRepository(self.session)
+        self.message_attachemnts = repo.MessageAttachmetsRepository(self.session)
         
         return self
         

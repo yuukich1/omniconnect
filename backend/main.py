@@ -3,6 +3,7 @@ from scalar_fastapi import get_scalar_api_reference
 from src.api.routers import all_routers
 from src.api.exception_handlers import register_exception_handlers
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(description='OmniConnect API', docs_url=None, redoc_url=None)
 
@@ -31,3 +32,6 @@ for router in all_routers:
     app.include_router(prefix='/api/v1', router=router)
     
 register_exception_handlers(app)
+
+
+app.mount("/static", StaticFiles(directory="D:/nya/yuuki/OmniConnect/backend/uploads"), name="static")

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     SECRET_REFRESH_KEY: str = 'secret_refresh_key'
     EXPIRE_IN: int = 3600
     EXPIRE_REFRESH_TOKEN_IN: int = 86400
-    UPLOAD_DIR: str = "uploads/telegram"
+    UPLOAD_DIR: str = "uploads"
     
     model_config = {
         "env_file": ".env",

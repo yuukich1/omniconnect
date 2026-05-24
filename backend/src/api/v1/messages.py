@@ -17,6 +17,6 @@ async def send_message(chat_id: int,
                        t_service: TelegramBotsServiceDep, 
                        user: CurrentUserDep, 
                        text: Optional[str] = Form(None), 
-                       attachments: Optional[UploadFile] = File(None)):
+                       attachments: Optional[List[UploadFile]] = File(None)):
     await t_service.send_message(chat_id, text, attachments, user, uow)
     return {"status": "ok"}

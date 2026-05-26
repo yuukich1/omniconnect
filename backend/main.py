@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from scalar_fastapi import get_scalar_api_reference
-from src.api.routers import all_routers
+from src.api.routers import all_routers, all_webhooks, all_websokets
 from src.api.exception_handlers import register_exception_handlers
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +30,12 @@ async def scalar_html():
 
 for router in all_routers:
     app.include_router(prefix='/api/v1', router=router)
+    
+for webhook in all_webhooks:
+    app.include_router(prefix='/webhook', router=webhook)
+    
+for websocket in all_websokets:
+    app.include_router(prefix='/ws', router=websocket)
     
 register_exception_handlers(app)
 

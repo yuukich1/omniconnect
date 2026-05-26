@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from src.models.bots import Bots
 
@@ -17,6 +17,11 @@ class ChatRepository(SQLAlchemyRepository):
         return chat.scalar_one_or_none()
     
     async def list_by_user_id(self, user_id: int) -> List[Chats]:
-        query = select(self.model).join(Bots, Bots.id == Chats.bot_id).filter(Bots.user_id == user_id)
+        query = select(self.model).filter(
+            or_(
+                self.model.owner_id == user_id,
+                self.model.member_id == user_id
+            )
+        )
         chats = await self.session.execute(query)
         return list(chats.scalars().all())

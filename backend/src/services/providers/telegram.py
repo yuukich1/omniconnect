@@ -74,12 +74,13 @@ class TelegramBotsService(IPlatformBotsService):
             await uow.commit()
             return msg_data
 
-    async def _get_or_create_chat(self, uow, data, bot_id):
-        chat = await uow.chats.get_by_chat_id_and_bot_id(data.chat_id, bot_id)
+    async def _get_or_create_chat(self, uow, data, bot):
+        chat = await uow.chats.get_by_chat_id_and_bot_id(data.chat_id, bot.id)
         return chat or await uow.chats.save({
-            'chat_id': data.chat_id, 
+            'chat_external_id': data.chat_id, 
             'username': data.username, 
-            'bot_id': bot_id
+            'bot_id': bot.id,
+            'owner_id': bot.user_id
         })
 
     async def _get_or_create_message(self, uow, data, chat_id):
@@ -94,6 +95,7 @@ class TelegramBotsService(IPlatformBotsService):
             'text': data.text,
             'media_group_id': data.media_group_id,
             'is_from_bot': False,
+            'username': data.username
         })
 
     async def _process_attachment(self, uow, message_id, file_id, db_bot):
@@ -120,10 +122,11 @@ class TelegramBotsService(IPlatformBotsService):
             message = await uow.message.save({
                 'chat_id': chat.id,
                 'text': text,
-                'is_from_bot': True
+                'is_from_bot': True,
+                'username': user.username
             })
             if attachments:
-                list_local_filepath = await self._send_attachments(tg_bot, chat.chat_id, attachments, text, db_bot.id)
+                list_local_filepath = await self._send_attachments(tg_bot, chat.chat_external_id, attachments, text, db_bot.id)
                 for path in list_local_filepath:
                     attachment = await uow.attachments.save({"path": path})
                     await uow.message_attachemnts.save({
@@ -131,7 +134,7 @@ class TelegramBotsService(IPlatformBotsService):
                         "attachments_id": attachment.id
                     })
             else:
-                await tg_bot.send_message(chat_id=chat.chat_id, text=text or "")
+                await tg_bot.send_message(chat_id=chat.chat_external_id, text=text or "")
             await uow.commit()
             return
 

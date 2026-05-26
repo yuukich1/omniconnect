@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     EXPIRE_IN: int = 3600
     EXPIRE_REFRESH_TOKEN_IN: int = 86400
     UPLOAD_DIR: str = "uploads"
+    REDIS_HOST: str = 'localhost'
+    REDIS_PORT: int = 6379
     
     model_config = {
         "env_file": ".env",

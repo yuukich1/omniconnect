@@ -32,3 +32,8 @@ class TokenInvalidError(Exception):
     def __init__(self, message: str = 'Токен не валидный'):
         self.message = message
         super().__init__(self.message)
+        
+class CoflitUserError(Exception):
+    def __init__(self, message: str = 'Произошел конфликт'):
+        self.message = message
+        super().__init__(self.message)

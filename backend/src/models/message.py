@@ -16,7 +16,7 @@ class Message(BaseModel):
     media_group_id: Mapped[Optional[str]] = mapped_column(index=True, nullable=True)
     is_from_bot: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    
+    username: Mapped[str] = mapped_column(nullable=False)
     attachments: Mapped[List["Attachments"]] = relationship(
         "Attachments",
         secondary="message_attachments",

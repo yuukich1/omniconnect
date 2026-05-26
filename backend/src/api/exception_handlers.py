@@ -1,18 +1,19 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
-import src.core.exceptions.auth as user_exc
+import src.core.exceptions.auth as auth_exc
 import src.core.exceptions.bots as bot_exc
 import src.core.exceptions.chats as chat_exc
 
 
 EXCEPTION_MAP = {
-    user_exc.UserAlreadyExistsError: status.HTTP_409_CONFLICT,
-    user_exc.UserCredentialError: status.HTTP_401_UNAUTHORIZED,
-    user_exc.CredentialTokenError: status.HTTP_401_UNAUTHORIZED,
-    user_exc.TokenPayloadError: status.HTTP_401_UNAUTHORIZED,
-    user_exc.TokenExpiredError: status.HTTP_401_UNAUTHORIZED,
-    user_exc.TokenInvalidError: status.HTTP_401_UNAUTHORIZED,
-    user_exc.UserNotFoundError: status.HTTP_404_NOT_FOUND,
+    auth_exc.UserAlreadyExistsError: status.HTTP_409_CONFLICT,
+    auth_exc.UserCredentialError: status.HTTP_401_UNAUTHORIZED,
+    auth_exc.CredentialTokenError: status.HTTP_401_UNAUTHORIZED,
+    auth_exc.TokenPayloadError: status.HTTP_401_UNAUTHORIZED,
+    auth_exc.TokenExpiredError: status.HTTP_401_UNAUTHORIZED,
+    auth_exc.TokenInvalidError: status.HTTP_401_UNAUTHORIZED,
+    auth_exc.UserNotFoundError: status.HTTP_404_NOT_FOUND,
+    auth_exc.CoflitUserError: status.HTTP_409_CONFLICT,
     
     bot_exc.BotNotFoundError: status.HTTP_404_NOT_FOUND,
     bot_exc.BotPermissionError: status.HTTP_403_FORBIDDEN,

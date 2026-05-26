@@ -13,7 +13,9 @@ class IUnitOfWork(ABC):
     users: repo.UserRepository
     attachments: repo.AttachmentsRepository
     message_attachemnts: repo.MessageAttachmetsRepository
-    
+    post: repo.PostRepository
+    post_attachment: repo.PostAttachmentRepository
+
     @abstractmethod
     async def __aenter__(self): ...
 
@@ -44,7 +46,9 @@ class UnitOfWork(IUnitOfWork):
         self.users = repo.UserRepository(self.session)
         self.attachments = repo.AttachmentsRepository(self.session)
         self.message_attachemnts = repo.MessageAttachmetsRepository(self.session)
-        
+        self.post = repo.PostRepository(self.session)
+        self.post_attachment = repo.PostAttachmentRepository(self.session)
+
         return self
         
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:

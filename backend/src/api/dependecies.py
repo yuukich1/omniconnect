@@ -22,6 +22,8 @@ _redis_broker_manager = srv.RedisMessageBroker(settings.REDIS_HOST, settings.RED
 _ws_manager = srv.WebsocketManager()
 _conn_manager = srv.ConnectionManager()
 _chat_service = srv.ChatService()
+_user_service = srv.UserService()
+_post_service = srv.PostService()
 
 
 def get_auth_service() -> srv.AuthService:
@@ -48,6 +50,12 @@ def get_conn_manager() -> srv.ConnectionManager:
 def get_chat_service() -> srv.ChatService:
     return _chat_service
 
+def get_user_service() -> srv.UserService:
+    return _user_service
+
+def get_post_service() -> srv.PostService:
+    return _post_service
+
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> CurrentUser:
     payload: dict = _security_service.decode_token(token)
     user_id_raw = payload.get("user_id")
@@ -71,3 +79,5 @@ BrokerManagerDep = Annotated[srv.RedisMessageBroker, Depends(get_broker_manager)
 WSManagerDep = Annotated[srv.WebsocketManager, Depends(get_ws_manager)]
 ConnManagerDep = Annotated[srv.ConnectionManager, Depends(get_conn_manager)]
 ChatServiceDep = Annotated[srv.ChatService, Depends(get_chat_service)]
+UserServiceDep = Annotated[srv.UserService, Depends(get_user_service)]
+PostServiceDep = Annotated[srv.PostService, Depends(get_post_service)]

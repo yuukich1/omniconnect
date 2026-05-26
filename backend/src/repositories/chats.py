@@ -12,7 +12,7 @@ class ChatRepository(SQLAlchemyRepository):
     model = Chats
     
     async def get_by_chat_id_and_bot_id(self, chat_id: int, bot_id: int) -> Optional[Chats]:  # noqa: F821
-        query = select(self.model).filter_by(chat_id=chat_id, bot_id=bot_id)
+        query = select(self.model).filter_by(chat_external_id=chat_id, bot_id=bot_id)
         chat = await self.session.execute(query)
         return chat.scalar_one_or_none()
     

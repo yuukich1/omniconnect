@@ -2,7 +2,8 @@ from src.schemas.users import CurrentUser
 from src.core.exceptions.bots import BotNotFoundError
 from .uow import IUnitOfWork
 from src.schemas.bots import BotCreateRequest
-
+import aiogram as tg
+from src.core.config import session_tg_bot, settings
 class BotsService: 
     
     async def create_bot(self, bot_data: BotCreateRequest, user_id: int, uow: IUnitOfWork):
@@ -11,6 +12,8 @@ class BotsService:
         async with uow:
             bot = await uow.bots.save(bot_dict)
             await uow.commit()
+            if bot_data.platform == 'telegram':
+                await tg.Bot(token=bot.token, session=session_tg_bot).set_webhook(f"{settings.DOMAIN}/webhooks/{bot.id}/telegram")
             return bot
         
     async def list_bots(self, user_id: int, uow: IUnitOfWork):

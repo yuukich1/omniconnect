@@ -3,6 +3,7 @@ from typing import Optional
 
 from fastapi import WebSocketException, status
 from fastapi.encoders import jsonable_encoder
+from src.services.message import MessageService
 from src.schemas.users import CurrentUser
 from src.schemas.message import MessageSchema
 from .uow import IUnitOfWork
@@ -19,7 +20,8 @@ class WebsocketManager:
         uow: IUnitOfWork, 
         broker: RedisMessageBroker, 
         tg_service: TelegramBotsService,
-        conn_manager: ConnectionManager 
+        conn_manager: ConnectionManager,
+        m_service: MessageService
     ):
         async with uow:
             chat = await uow.chats.get(chat_id)
@@ -34,7 +36,7 @@ class WebsocketManager:
 
                 if bot.platform == 'telegram':
                     await tg_service.send_message(
-                        chat_id=chat_id, text=text, attachments=None, user=user, uow=uow
+                        chat_id=chat_id, text=text, attachments=None, user=user, uow=uow, m_service=m_service, broker=broker, conn_manager=conn_manager
                     )
                     return
 
@@ -44,7 +46,7 @@ class WebsocketManager:
                 'username': user.username
             })
             await uow.commit()
-            message_data = MessageSchema.model_validate(message_model, from_attributes=True).model_dump()
+            message_data = MessageSchema.model_validate(await m_service.get_message_by_id(message_model.id, uow), from_attributes=True).model_dump()
             message_data = jsonable_encoder(message_model)
             await broker.publish(str(chat_id), message_data)
             

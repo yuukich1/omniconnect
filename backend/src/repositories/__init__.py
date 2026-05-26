@@ -4,3 +4,4 @@ from .message import MessageRepository, MessageAttachmetsRepository
 from .token import RefreshTokenRepository
 from .users import UserRepository
 from .attachments import AttachmentsRepository
+from .post import PostRepository, PostAttachmentRepository

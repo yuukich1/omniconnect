@@ -2,9 +2,14 @@ import mimetypes
 import os
 from typing import List, Optional
 from fastapi import UploadFile
+from fastapi.encoders import jsonable_encoder
 import httpx
 import aiogram as tg
 from aiogram.utils.media_group import MediaGroupBuilder
+from src.schemas.message import MessageSchema
+from src.services.connect_manager import ConnectionManager
+from src.services.message import MessageService
+from src.services.redis_manager import RedisMessageBroker
 from src.schemas.users import CurrentUser
 from src.core.exceptions.bots import BotNotFoundError, BotPermissionError
 from src.core.exceptions.chats import ChatNotFoundError
@@ -63,15 +68,20 @@ class TelegramBotsService(IPlatformBotsService):
             print(f"Error downloading file {file_id}: {e}")
             return None
         
-    async def save_message(self, payload: dict, bot_id: int, uow: IUnitOfWork):
+    async def save_message(self, payload: dict, bot_id: int, uow: IUnitOfWork, m_service: MessageService, broker: RedisMessageBroker, conn_manager: ConnectionManager):
         msg_data = self._extract_message_data(payload)
         async with uow:
             db_bot = await self._bot_exist(uow, bot_id=bot_id)
-            chat = await self._get_or_create_chat(uow, msg_data, db_bot.id)
+            chat = await self._get_or_create_chat(uow, msg_data, db_bot)
             message = await self._get_or_create_message(uow, msg_data, chat.id)
             if msg_data.file_id:
                 await self._process_attachment(uow, message.id, msg_data.file_id, db_bot)
             await uow.commit()
+            message_data = MessageSchema.model_validate(await m_service.get_message_by_id(message.id, uow), from_attributes=True).model_dump()
+            message_data = jsonable_encoder(message_data)
+            await broker.publish(str(chat.id), message_data)
+            
+            await conn_manager.broadcast(chat.id, message_data)
             return msg_data
 
     async def _get_or_create_chat(self, uow, data, bot):
@@ -112,7 +122,7 @@ class TelegramBotsService(IPlatformBotsService):
         if not bot: raise BotNotFoundError()
         return bot
             
-    async def send_message(self, chat_id: int, text: Optional[str], attachments: Optional[List[UploadFile]], user: CurrentUser, uow: IUnitOfWork):
+    async def send_message(self, chat_id: int, text: Optional[str], attachments: Optional[List[UploadFile]], user: CurrentUser, uow: IUnitOfWork, m_service: MessageService, broker: RedisMessageBroker, conn_manager: ConnectionManager):
         async with uow:
             db_bot = await self._bot_exist(uow, chat_id=chat_id)
             if db_bot.user_id != user.id: raise BotPermissionError(db_bot.id)
@@ -136,6 +146,11 @@ class TelegramBotsService(IPlatformBotsService):
             else:
                 await tg_bot.send_message(chat_id=chat.chat_external_id, text=text or "")
             await uow.commit()
+            message_data = MessageSchema.model_validate(await m_service.get_message_by_id(message.id, uow), from_attributes=True).model_dump()
+            message_data = jsonable_encoder(message_data)
+            await broker.publish(str(chat.id), message_data)
+            
+            await conn_manager.broadcast(chat.id, message_data)
             return
 
     async def _send_attachments(self, tg_bot: tg.Bot, chat_id: int, attachments: List[UploadFile], text: Optional[str], owner_id: int):

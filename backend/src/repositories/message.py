@@ -32,6 +32,17 @@ class MessageRepository(SQLAlchemyRepository):
         result = await self.session.execute(query)
         return list(result.unique().scalars().all())
     
+    async def get_full_message_by_id(self, message_id: int) -> Optional[Message]:
+        query = (
+            select(self.model)
+            .options(joinedload(self.model.attachments)) 
+            .filter(self.model.id == message_id)
+        )
+        result = await self.session.execute(query)
+        message = result.unique().scalar_one_or_none()
+                
+        return message
+    
     
 class MessageAttachmetsRepository(SQLAlchemyRepository):
     

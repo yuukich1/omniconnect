@@ -8,3 +8,5 @@ from .redis_manager import RedisMessageBroker
 from .websocket import WebsocketManager
 from .connect_manager import ConnectionManager
 from .chats import ChatService
+from .users import UserService
+from .post import PostService

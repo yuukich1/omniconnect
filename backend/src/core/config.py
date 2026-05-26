@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     REDIS_HOST: str = 'localhost'
     REDIS_PORT: int = 6379
-    
+    DOMAIN: str = 'http://localhost:8000'
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

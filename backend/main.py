@@ -32,7 +32,7 @@ for router in all_routers:
     app.include_router(prefix='/api/v1', router=router)
     
 for webhook in all_webhooks:
-    app.include_router(prefix='/webhook', router=webhook)
+    app.include_router(router=webhook)
     
 for websocket in all_websokets:
     app.include_router(prefix='/ws', router=websocket)

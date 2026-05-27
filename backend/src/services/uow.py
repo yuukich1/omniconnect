@@ -1,4 +1,3 @@
-from src.core.config import async_session_maker
 from abc import ABC, abstractmethod
 from sqlalchemy.ext.asyncio import AsyncSession
 import src.repositories as repo
@@ -6,16 +5,9 @@ import src.repositories as repo
 
 class IUnitOfWork(ABC):
     
-    bots: repo.BotsRepository
-    chats: repo.ChatRepository
-    message: repo.MessageRepository
-    token: repo.RefreshTokenRepository
     users: repo.UserRepository
-    attachments: repo.AttachmentsRepository
-    message_attachemnts: repo.MessageAttachmetsRepository
-    post: repo.PostRepository
-    post_attachment: repo.PostAttachmentRepository
-
+    refresh_token: repo.RefreshTokenRepository
+    
     @abstractmethod
     async def __aenter__(self): ...
 
@@ -33,21 +25,13 @@ class IUnitOfWork(ABC):
     
 class UnitOfWork(IUnitOfWork):
     
-    def __init__(self):
-        self.session_factory = async_session_maker
-        
+    def __init__(self, session_factory):
+        self.session_factory = session_factory
+
     async def __aenter__(self):
         self.session: AsyncSession = self.session_factory()
-        
-        self.bots = repo.BotsRepository(self.session)
-        self.chats = repo.ChatRepository(self.session)
-        self.message = repo.MessageRepository(self.session)
-        self.token = repo.RefreshTokenRepository(self.session)
         self.users = repo.UserRepository(self.session)
-        self.attachments = repo.AttachmentsRepository(self.session)
-        self.message_attachemnts = repo.MessageAttachmetsRepository(self.session)
-        self.post = repo.PostRepository(self.session)
-        self.post_attachment = repo.PostAttachmentRepository(self.session)
+        self.refresh_token = repo.RefreshTokenRepository(self.session)
 
         return self
         

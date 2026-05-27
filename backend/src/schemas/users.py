@@ -1,27 +1,19 @@
-import re
-from typing import Annotated
+from typing import Optional
+import uuid
 
-from pydantic import BaseModel, EmailStr, Field, AfterValidator
+from pydantic import BaseModel
 
-def check_password_strength(v: str) -> str:
-    if not re.search(r"\d", v):
-        raise ValueError("Пароль должен содержать цифру")
-    if not re.search(r"[A-ZА-Я]", v):
-        raise ValueError("Пароль должен содержать заглавную букву")
-    return v
-
-class UserRegister(BaseModel):
-    email: EmailStr
-    username: str = Field(max_length=20)
-    password: Annotated[str, Field(min_length=8, max_length=64), AfterValidator(check_password_strength)]
-    
-
-class CurrentUser(BaseModel):
-    id: int
+class UserResponse(BaseModel):
+    id: uuid.UUID
     username: str
     role: str
     
 
-class RefreshTokenBody(BaseModel):
-    grant_type: str = Field(default="refresh_token")
-    refresh_token: str = Field(...)
+class UserUpdateRequest(BaseModel):
+    username: Optional[str] = None
+    role: Optional[str] = None
+    
+
+class UserChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str

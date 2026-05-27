@@ -1,25 +1,8 @@
 from fastapi import FastAPI
 from scalar_fastapi import get_scalar_api_reference
-from src.api.routers import all_routers, all_webhooks, all_websokets
-from src.api.exception_handlers import register_exception_handlers
-from starlette.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from src.api import all_router, register_exception_handlers
 
 app = FastAPI(description='OmniConnect API', docs_url=None, redoc_url=None)
-
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,     
-    allow_methods=["*"],
-    allow_headers=["*"],              
-)
 
 @app.get("/docs", include_in_schema=False)
 async def scalar_html():
@@ -28,16 +11,8 @@ async def scalar_html():
         title="OmniConnect API",
     )
 
-for router in all_routers:
-    app.include_router(prefix='/api/v1', router=router)
-    
-for webhook in all_webhooks:
-    app.include_router(router=webhook)
-    
-for websocket in all_websokets:
-    app.include_router(prefix='/ws', router=websocket)
+for router in all_router:
+    app.include_router(prefix='/api/v0.2', router=router)
     
 register_exception_handlers(app)
-
-
-app.mount("/static", StaticFiles(directory="D:/nya/yuuki/OmniConnect/backend/uploads"), name="static")
+    

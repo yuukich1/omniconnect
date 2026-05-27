@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 import hashlib
+import uuid
 import jwt
-from src.core.exceptions.auth import TokenExpiredError, TokenInvalidError
 from src.core.config import settings
+from src.schemas.tokens import TokenDTO
+
 
 class SecurityService:
     
@@ -12,32 +14,49 @@ class SecurityService:
     def verify_password(self, password: str, hashed: str) -> bool:
         return self.hash_password(password) == hashed
     
-    def _generate_token(self, payload: dict, secret_key: str) -> str:
-        return jwt.encode(payload, secret_key, algorithm="HS256")
-
-    def create_access_token(self, user_id: int, username: str, role: str) -> str:
-        payload = {
-            "user_id": user_id,
-            "username": username,
-            "role": role,
-            "exp": datetime.utcnow() + timedelta(seconds=settings.EXPIRE_IN)
+    def generate_pair(self, user_id: uuid.UUID, username: str, role: str):
+        now = datetime.utcnow()
+        jti = str(uuid.uuid4())
+        acc_exp = now + timedelta(seconds=settings.expire_in)
+        ref_exp = now + timedelta(seconds=settings.expire_refresh_token_in)
+        
+        access_payload = {
+            'sub': str(user_id),
+            'username': username,
+            'role': role,
+            'type': 'access',
+            'exp': acc_exp
         }
-        return self._generate_token(payload, settings.SECRET_KEY)
-    
-    def create_refresh_token(self, user_id: int) -> str:
-        payload = {
-            "user_id": user_id,
-            "exp": datetime.utcnow() + timedelta(seconds=settings.EXPIRE_REFRESH_TOKEN_IN)
+        refresh_payload = {
+            'sub': str(user_id),
+            'username': username,
+            'role': role,
+            'jti': jti,
+            'type': 'refresh',
+            'exp': ref_exp
         }
-        return self._generate_token(payload, settings.SECRET_REFRESH_KEY)
+        access_token = jwt.encode(access_payload, settings.secret_key, algorithm='HS256')
+        refresh_token = jwt.encode(refresh_payload, settings.secret_refresh_key, algorithm='HS256')
+        return TokenDTO(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            jwi=jti,
+            access_token_expires_in=settings.expire_in,
+            refresh_token_expires_in=settings.expire_refresh_token_in
+        )
     
-    
-    def decode_token(self, token: str) -> dict:
+    def verify_token(self, token: str, token_type: str = 'access'):
+        secret = settings.secret_key if token_type == 'access' else settings.secret_refresh_key
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jwt.decode(token, secret, algorithms=['HS256'])
+            if payload.get('type') != token_type:
+                raise jwt.InvalidTokenError
             return payload
         except jwt.ExpiredSignatureError:
-            raise TokenExpiredError("Token has expired")
+            raise 
         except jwt.InvalidTokenError:
-            raise TokenInvalidError("Invalid token")
+            raise 
+        
+    
+        
         

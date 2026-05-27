@@ -1,58 +1,73 @@
-from loguru import logger
-from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timedelta, timezone
 
-from src.core.exceptions.auth import UserAlreadyExistsError, UserNotFoundError, UserCredentialError, CredentialTokenError
-from src.schemas.users import UserRegister
+from src.schemas.auth import AuthRequest
+
 from .uow import IUnitOfWork
 from .security import SecurityService
-
+from src.models import User, RefreshToken
+from src.api.exceptions import exceptions as exc
 
 class AuthService:
     
-    
-    async def register(self, data: UserRegister, uow: IUnitOfWork):
-        user_dict = data.model_dump()
-        raw_password = user_dict.pop('password')
-        user_dict['hashed_password'] = SecurityService().hash_password(raw_password)
-        async with uow: 
-            try:
-                user = await uow.users.save(user_dict)
-                await uow.commit()
-                return user
-            except IntegrityError as e:
-                await uow.rollback()
-                error_msg = str(e.orig)
-                if "unique" in error_msg.lower() or "already exists" in error_msg.lower():
-                    raise UserAlreadyExistsError()
-                raise e
-                
-        
-    async def login(self, username: str, password: str, uow: IUnitOfWork):
+    async def create_user(self, user_data: AuthRequest, s_service: SecurityService, uow: IUnitOfWork):
+        hashed_password = s_service.hash_password(user_data.password)
+        user_model = User(username=user_data.username, hashed_password=hashed_password)
+        async with uow:
+            user = await uow.users.create(user_model)
+            await uow.commit()
+            return user
+
+    async def login_user(self, username: str, password: str, user_agent: str, ip: str, s_service: SecurityService, uow: IUnitOfWork):
         async with uow:
             user = await uow.users.get_by_username(username)
-            if not user:
-                raise UserNotFoundError()
-            logger.info(f"User found: {user.username}, hashed_password: {user.hashed_password}")
-            if not SecurityService().verify_password(password, user.hashed_password):
-                raise UserCredentialError()
-            access_token = SecurityService().create_access_token(user.id, user.username, user.role)
-            refresh_token = SecurityService().create_refresh_token(user.id)
-            await uow.token.save({"user_id": user.id, "refresh_token": refresh_token})
+            if not user or not s_service.verify_password(password, user.hashed_password):
+                raise exc.AuthenticationError
+            token_data = s_service.generate_pair(user.id, user.username, 'user')
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_data.refresh_token_expires_in)
+            await uow.refresh_token.create(RefreshToken(
+                jti=token_data.jwi,
+                user_id=user.id,
+                expires_at=expires_at,
+                user_agent=user_agent,
+                ip_address=ip,
+            ))
             await uow.commit()
-            return {"access_token": access_token, "refresh_token": refresh_token, "type": "bearer"}
+            return token_data
         
-    
-    async def refresh_token(self, token: str, uow: IUnitOfWork):
+    async def refresh_token(self, refresh_token: str, user_agent: str, ip: str, s_service: SecurityService, uow: IUnitOfWork):
+        payload = s_service.verify_token(refresh_token, token_type='refresh')
+        jti = payload.get('jti')
+        if not jti:
+            raise exc.AuthenticationError
         async with uow:
-            user =  await uow.users.get_user_by_token(token)
+            token_record = await uow.refresh_token.get_by_jti(jti)
+            if not token_record or token_record.is_revoked or token_record.expires_at < datetime.now(timezone.utc):
+                raise exc.AuthenticationError
+            user = await uow.users.get(token_record.user_id)
             if not user:
-                raise CredentialTokenError
-            access_token = SecurityService().create_access_token(user.id, user.username, user.role)
-            return {'access_token': access_token, 'type': 'bearer'}
-        
-        
-    async def exit(self, token: str, uow: IUnitOfWork):
-        async with uow:
-            await uow.token.add_to_blacklist(token)
+                raise exc.AuthenticationError
+            new_token_data = s_service.generate_pair(user.id, user.username, 'user')
+            token_record.is_revoked = True
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=new_token_data.refresh_token_expires_in)
+            await uow.refresh_token.create(RefreshToken(
+                jti=new_token_data.jwi,
+                user_id=user.id,
+                expires_at=expires_at,
+                user_agent=token_record.user_agent,
+                ip_address=token_record.ip_address,
+            ))
             await uow.commit()
-            
+            return new_token_data
+        
+    async def revoke_token(self, refresh_token: str, s_service: SecurityService, uow: IUnitOfWork):
+        payload = s_service.verify_token(refresh_token, token_type='refresh')
+        jti = payload.get('jti')
+        if not jti:
+            raise exc.AuthenticationError
+        async with uow:
+            token_record = await uow.refresh_token.get_by_jti(jti)
+            if token_record:
+                token_record.is_revoked = True
+                await uow.commit()
+                return 
+        

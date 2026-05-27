@@ -18,9 +18,10 @@ EXCEPTION_MAP = {
 
 def register_exception_handlers(app: FastAPI) -> None:
     for exc_class, status_code in EXCEPTION_MAP.items():
-        async def generic_handler(request: Request, exc: Exception):
+        async def generic_handler(request: Request, exc: Exception, code=status_code):
             return JSONResponse(
-                status_code=status_code, 
+                status_code=code, 
                 content={"detail": str(exc)},
             )
+        
         app.add_exception_handler(exc_class, generic_handler)

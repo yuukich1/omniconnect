@@ -29,7 +29,7 @@ async def scalar_html():
     )
 
 for router in all_routers:
-    app.include_router(prefix='/api/v1', router=router)
+    app.include_router(prefix='/api/v0.1', router=router)
     
 for webhook in all_webhooks:
     app.include_router(router=webhook)

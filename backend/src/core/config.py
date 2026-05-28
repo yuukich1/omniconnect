@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     expire_refresh_token_in: int = 86400  # 24 hours
     secret_key: str = 'your-secret-key-for-jwt'
     secret_refresh_key: str = 'your-secret-refresh-key-for-jwt'
-    
+    api_version: str = 'v0.2'
     model_config = {
         'env_file': '.env',
         'env_file_encoding': 'utf-8',

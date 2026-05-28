@@ -14,6 +14,7 @@ EXCEPTION_MAP = {
     jwt.InvalidTokenError: status.HTTP_401_UNAUTHORIZED,
     jwt.ExpiredSignatureError: status.HTTP_401_UNAUTHORIZED,
     exc.NotFoundError: status.HTTP_404_NOT_FOUND,
+    exc.ForbidenError: status.HTTP_403_FORBIDDEN
 }
 
 def register_exception_handlers(app: FastAPI) -> None:

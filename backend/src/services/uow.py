@@ -7,6 +7,10 @@ class IUnitOfWork(ABC):
     
     users: repo.UserRepository
     refresh_token: repo.RefreshTokenRepository
+    chat: repo.ChatsRepository
+    chat_members: repo.ChatMembersRepository
+    message: repo.MessageRepository
+    
     
     @abstractmethod
     async def __aenter__(self): ...
@@ -32,6 +36,9 @@ class UnitOfWork(IUnitOfWork):
         self.session: AsyncSession = self.session_factory()
         self.users = repo.UserRepository(self.session)
         self.refresh_token = repo.RefreshTokenRepository(self.session)
+        self.chat = repo.ChatsRepository(self.session)
+        self.chat_members = repo.ChatMembersRepository(self.session)
+        self.message = repo.MessageRepository(self.session)
 
         return self
         

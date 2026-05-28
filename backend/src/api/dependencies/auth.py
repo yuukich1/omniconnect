@@ -5,6 +5,7 @@ import jwt
 from src.schemas.auth import CurrentUser
 from src.services.security import SecurityService
 from src.core.security import oauth2_scheme
+from src.api.exceptions import exceptions as exc
 
 _security_service = SecurityService()
 
@@ -22,6 +23,11 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> CurrentUs
         role=role
     )
 
+def get_current_admin_user(user: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
+    if user.role != 'admin':
+        raise exc.ForbidenError
+    return user
+    
+
 CurrentUserDependency = Annotated[CurrentUser, Depends(get_current_user)]
-
-
+CurrentAdminDependecy = Annotated[CurrentUser, Depends(get_current_admin_user)]

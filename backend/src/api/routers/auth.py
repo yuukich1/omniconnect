@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
-from src.api.dependencies.service import AuthServiceDependency, SecurityServiceDependency, UnitOfWorkDependency
+from src.api.dependencies.service import AuthServiceDependency, SecurityServiceDependency
+from src.api.dependencies.connect import UnitOfWorkDependency
 from src.schemas import CreateBaseResponse, StatusReponse
 from src.schemas.auth import AuthRequest, TokenReponse
 from fastapi.responses import JSONResponse

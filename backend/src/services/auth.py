@@ -53,8 +53,8 @@ class AuthService:
                 jti=new_token_data.jwi,
                 user_id=user.id,
                 expires_at=expires_at,
-                user_agent=token_record.user_agent,
-                ip_address=token_record.ip_address,
+                user_agent=user_agent,
+                ip_address=ip,
             ))
             await uow.commit()
             return new_token_data

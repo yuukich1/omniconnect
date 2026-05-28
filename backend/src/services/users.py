@@ -2,13 +2,13 @@ from typing import Optional
 import uuid
 
 from src.schemas.auth import CurrentUser
-from src.services.uow import UnitOfWork
+from src.services.uow import IUnitOfWork
 from src.api.exceptions import exceptions as exc
 from src.schemas.users import UserChangePasswordRequest, UserResponse, UserUpdateRequest
 
 class UserService:
     
-    async def get_user_by_id(self, user_id: uuid.UUID, uow: UnitOfWork) -> UserResponse:
+    async def get_user_by_id(self, user_id: uuid.UUID, uow: IUnitOfWork) -> UserResponse:
         async with uow:
             user = await uow.users.get(user_id)
             if not user:
@@ -19,7 +19,12 @@ class UserService:
                 role=user.role
             )
             
-    async def get_user_by_username(self, username: str, uow: UnitOfWork) -> UserResponse:
+    async def get_list_user(self, uow: IUnitOfWork):
+        async with uow:
+            users = await uow.users.list()
+            return [UserResponse(id=user.id, username = user.username, role=user.role) for user in users]
+            
+    async def get_user_by_username(self, username: str, uow: IUnitOfWork) -> UserResponse:
         async with uow:
             user = await uow.users.get_by_username(username)
             if not user:
@@ -30,7 +35,7 @@ class UserService:
                 role=user.role
             )
             
-    async def update_user(self, update_data: UserUpdateRequest,  current_user: CurrentUser, uow: UnitOfWork, user_id: Optional[uuid.UUID] = None) -> UserResponse:
+    async def update_user(self, update_data: UserUpdateRequest,  current_user: CurrentUser, uow: IUnitOfWork, user_id: Optional[uuid.UUID] = None) -> UserResponse:
         async with uow:
             if user_id is None:
                 user_id = current_user.id
@@ -52,7 +57,7 @@ class UserService:
                 role=user.role
             )
             
-    async def change_password(self, change_data: UserChangePasswordRequest, current_user: CurrentUser, uow: UnitOfWork) -> None:
+    async def change_password(self, change_data: UserChangePasswordRequest, current_user: CurrentUser, uow: IUnitOfWork) -> None:
         async with uow:
             user = await uow.users.get(current_user.id)
             if not user:
@@ -64,7 +69,7 @@ class UserService:
             await uow.commit()
             return 
         
-    async def delete_user(self, user_id: uuid.UUID, uow: UnitOfWork) -> None:
+    async def delete_user(self, user_id: uuid.UUID, uow: IUnitOfWork) -> None:
         async with uow:
             user = await uow.users.get(user_id)
             if not user:

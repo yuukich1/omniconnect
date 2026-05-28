@@ -2,8 +2,8 @@ from fastapi import APIRouter
 from src.schemas import StatusReponse
 from src.schemas.users import UserResponse, UserUpdateRequest, UserChangePasswordRequest
 from src.api.dependencies.auth import CurrentUserDependency
-from src.api.dependencies.service import UserServiceDependency, UnitOfWorkDependency
-
+from src.api.dependencies.service import UserServiceDependency
+from src.api.dependencies.connect import UnitOfWorkDependency
 
 router = APIRouter(prefix="/me", tags=["me"])
 

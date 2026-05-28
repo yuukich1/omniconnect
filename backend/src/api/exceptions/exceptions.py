@@ -27,3 +27,7 @@ class AuthorizationError(BaseDomainException):
 class NotFoundError(BaseDomainException):
     def __init__(self, message: str = "Resource not found"):
         super().__init__(message, code="NOT_FOUND")
+        
+class ForbidenError(BaseDomainException):
+    def __init__(self, message: str = 'Forbidden'):
+        super().__init__(message, code='FORBIDEN')
